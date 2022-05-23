@@ -12,7 +12,7 @@ class MyBot():
         self.vk = VkApi(token=token)
         self.longpoll = VkLongPoll(self.vk)
         self.db = DataBaseConnection()
-    
+
     def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None:
         params = {'user_id': user_id, 'message': message,  'random_id': randrange(10 ** 7)}
         if keyboard is not None:
@@ -27,31 +27,34 @@ class MyBot():
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
 
-    def event_to_me_handler(self, event)-> None: 
+
+    def start_command_handler(self, event)-> None: 
         request = event.text.lower()
         if request == "start":
             if not self.db.is_user_registered(event.user_id):
                 self.register_user(event.user_id)
-                self.write_msg(event.user_id, 'Вы зарегистрированы')
+                self.write_msg(event.user_id, 'Вы зарегистрированы', bot_keyboard)
             else:
-                self.write_msg(event.user_id, 'Вы уже зарегистрированы')
+                self.write_msg(event.user_id, 'Вы уже зарегистрированы', bot_keyboard)
 
-        elif request == "привет":
-            self.write_msg(event.user_id, f"Хай, {event.user_id}")
-
-        elif request == "пока":
-            self.write_msg(event.user_id, "Пока((")
-
+        elif request == 'Найти id Города':
+            new_state = 'Найти id Города'
+            
         else:
             self.write_msg(event.user_id, "Не поняла вашего ответа...")
 
+    def find_city_id_command_handler(self, event):
+        pass
 
-    def start_listen(self) -> None:    
+    def start_listen(self) -> None:     
         for event in self.longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW:
                 if event.to_me:
-                    self.event_to_me_handler(event)
-                   
+                    user_state = sel
+                    self.start_command_handler(event)
+
+                # if event.to_me:
+                #    self.find_city_id_command_handler(event)
 
 
 if __name__ == '__main__':

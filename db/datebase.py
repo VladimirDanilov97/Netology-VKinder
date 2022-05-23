@@ -1,5 +1,6 @@
+from matplotlib import use
 from sqlalchemy import create_engine, insert
-from db.model import users, blacklist, favorite
+from db.model import users, blacklist, favorite, user_state_machine
 
 
 class DataBaseConnection():
@@ -24,8 +25,12 @@ class DataBaseConnection():
             city_id=city_id, 
             sex=sex_id
             )
+        stmt_2 = user_state_machine.insert().values(
+            user_id=user_id, 
+            )
         with self.engine.connect() as con:
             con.execute(stmt)
+            con.execute(stmt_2)
 
     def add_to_black_list(self, user_id, blocked_user_id):
         stmt = blacklist.insert().values(
@@ -42,3 +47,12 @@ class DataBaseConnection():
             )
         with self.engine.connect() as con:
             con.execute(stmt)
+    
+    def get_user_state(self, user_id):
+        stmt = user_state_machine.select().where(user_id==user_id)
+        with self.engine.connect() as con:
+            response = con.execute(stmt)
+        return list(response)
+
+    def update_user_state(self, user_id, new_state:str):
+        stmt = user_state_machine.update().where(user_id==user_id).values(state=new_state)
