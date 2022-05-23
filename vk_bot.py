@@ -1,10 +1,12 @@
+from vk_api import VkApi
+from pprint import pprint
 from random import randrange
+from vk_api.keyboard import VkKeyboard
 from db.database import DataBaseConnection
 from config import GROUP_TOKEN, USER_TOKEN
-from vk_api import VkApi
 from vk_api.longpoll import VkLongPoll, VkEventType
-from keyboards import bot_keyboard
-from vk_api.keyboard import VkKeyboard
+from keyboards import bot_keyboard, search_option_keyboard
+
 
 class MyBot():
 
@@ -23,7 +25,6 @@ class MyBot():
     def find_city(self, query):
         params = {'q': query, 'country_id': 1}
         response = self.user_vk.method('database.getCities', params)
-        print(response)
         return response['items'][:10]
 
     def register_user(self, user_id: int) -> None:
@@ -37,9 +38,16 @@ class MyBot():
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
 
+    def find_suitable_user_ids(self, city_id, sex_id, age_from, age_to, offset=0): # выдает по 20 id за 1 запрос
+        params = {'city': city_id, 'sex': sex_id,
+                  'age_from': age_from, 'age_to': age_to,
+                  'offset': offset, 'has_photo': 1}
+        response = self.user_vk.method('users.search', params)
+        ids = [item['id'] for item in response['items']]
+        return ids
+
     def user_command_handler(self, event)-> None: 
         request = event.text.lower()
-        print(request)
         if request == "start":
             if self.db.is_user_registered(event.user_id):
                 self.write_msg(event.user_id, 'Вы уже зарегистрированы', bot_keyboard)
@@ -51,9 +59,15 @@ class MyBot():
             new_state = 'найти id города'
             self.db.update_user_state(event.user_id, new_state=new_state)
             self.write_msg(event.user_id, 'Введите название города')
-            
+        
+        elif request == 'начать поиск':
+            new_state = 'поиск'
+            self.db.update_user_state(event.user_id, new_state=new_state)
+            self.write_msg(event.user_id, 'Введите запрос в формате: "id-города" "id-пола" "возраст от" "возраст до"\
+                                           Например 1 1 20 25')
+
         else:
-            self.write_msg(event.user_id, "Не поняла вашего ответа...")
+            self.write_msg(event.user_id, "Не понял вашего ответа...")
 
     def find_city_id_command_handler(self, event):
         request = event.text.lower()
@@ -75,14 +89,24 @@ class MyBot():
                 if event.to_me:
                     user_state = self.db.get_user_state(event.user_id)
 
-                    if user_state == 'None':
+                    if event.text.lower() == 'начать сначала':
+                        new_state = 'None'
+                        self.db.update_user_state(event.user_id, new_state=new_state)
+                        self.write_msg(event.user_id, 'Выберите команду', bot_keyboard)
+                    
+                    elif user_state == 'поиск':
+                        pass
+
+                    elif user_state == 'None':
                         self.user_command_handler(event)
+
                     elif user_state == 'найти id города':
                         self.find_city_id_command_handler(event)
                         new_state = 'None'
                         self.db.update_user_state(event.user_id, new_state)
+                    
 
 if __name__ == '__main__':
     bot = MyBot(GROUP_TOKEN, USER_TOKEN)
   
-    bot.find_city('cvxc')
+    pprint(bot.find_suitable_user_ids(1, 1, 20, 25))
