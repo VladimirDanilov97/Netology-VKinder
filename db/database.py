@@ -10,13 +10,13 @@ class DataBaseConnection():
 
     def is_user_registered(self, user_id: int) -> bool:
         stmt = users.select().where(users.c.user_id == user_id)
-        response = []
         with self.engine.connect() as con:
-            response = list(con.execute(stmt))
-        if response:
-            return True
-        else:
-            return False
+            with con.begin():
+                response = list(con.execute(stmt))
+                if response:
+                    return True
+                else:
+                    return False
 
 
     def register_user(self, user_id, city_id, sex_id) -> None:
@@ -29,8 +29,9 @@ class DataBaseConnection():
             user_id=user_id, 
             )
         with self.engine.connect() as con:
-            con.execute(stmt)
-            con.execute(stmt_2)
+            with con.begin():
+                con.execute(stmt)
+                con.execute(stmt_2)
 
     def add_to_black_list(self, user_id, blocked_user_id):
         stmt = blacklist.insert().values(
@@ -38,21 +39,32 @@ class DataBaseConnection():
             blocked_user_id=blocked_user_id, 
             )
         with self.engine.connect() as con:
-            con.execute(stmt)
+            with con.begin():
+                con.execute(stmt)
     
     def add_to_favorite_list(self, user_id, favorite_user_id):
-        stmt = blacklist.insert().values(
+        stmt = favorite.insert().values(
             user_id=user_id, 
             favorite_user_id=favorite_user_id, 
             )
         with self.engine.connect() as con:
-            con.execute(stmt)
+            with con.begin():
+                con.execute(stmt)
     
     def get_user_state(self, user_id):
-        stmt = user_state_machine.select().where(user_id==user_id)
+        stmt = user_state_machine.select().where(user_state_machine.c.user_id == user_id)
         with self.engine.connect() as con:
-            response = con.execute(stmt)
-        return list(response)
+            with con.begin():
+                response = con.execute(stmt)
+                return list(response)[0][1]
 
     def update_user_state(self, user_id, new_state:str):
-        stmt = user_state_machine.update().where(user_id==user_id).values(state=new_state)
+        stmt = user_state_machine.update().where(user_state_machine.c.user_id==user_id).values(state=new_state)
+        with self.engine.connect() as con:
+            with con.begin():
+                response = con.execute(stmt)
+        
+
+if __name__ == '__main__':
+    db = DataBaseConnection()
+    print(db.get_user_state(170264822))
