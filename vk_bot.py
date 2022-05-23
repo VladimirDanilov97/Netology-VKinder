@@ -24,7 +24,7 @@ class MyBot():
         params = {'q': query, 'country_id': 1}
         response = self.user_vk.method('database.getCities', params)
         print(response)
-        return response['items']
+        return response['items'][:10]
 
     def register_user(self, user_id: int) -> None:
         fields_to_get = ['city', 'sex', 'bdate']
@@ -39,6 +39,7 @@ class MyBot():
 
     def user_command_handler(self, event)-> None: 
         request = event.text.lower()
+        print(request)
         if request == "start":
             if self.db.is_user_registered(event.user_id):
                 self.write_msg(event.user_id, 'Вы уже зарегистрированы', bot_keyboard)
@@ -46,11 +47,10 @@ class MyBot():
                 self.register_user(event.user_id)
                 self.write_msg(event.user_id, 'Вы зарегистрированы', bot_keyboard)
                
-
-        elif request == 'Найти id Города':
-            new_state = 'Найти id Города'
+        elif request == 'найти id города':
+            new_state = 'найти id города'
             self.db.update_user_state(event.user_id, new_state=new_state)
-            self.write_msg(event.user_id, 'Введите название города', bot_keyboard)
+            self.write_msg(event.user_id, 'Введите название города')
             
         else:
             self.write_msg(event.user_id, "Не поняла вашего ответа...")
@@ -61,7 +61,10 @@ class MyBot():
         if response:
             msg_text = 'По запросу найдено:\n'
             for city in response:
-                msg_text += f"id: {city['id']}; Город: {city['title']}; Район: {city['area']}; Регион: {city['region']}\n"
+                msg_text += f"id: {city.get('id', '-')}; \
+                              Город: {city.get('title', '-')}; \
+                              Район: {city.get('area', '-')}; \
+                              Регион: {city.get('region', '-')}\n"
             self.write_msg(event.user_id, msg_text)
         else:
             self.write_msg(event.user_id, 'Ничего не найдено')
@@ -71,11 +74,13 @@ class MyBot():
             if event.type == VkEventType.MESSAGE_NEW:
                 if event.to_me:
                     user_state = self.db.get_user_state(event.user_id)
+
                     if user_state == 'None':
                         self.user_command_handler(event)
-                    elif user_state == 'Найти id Города':
+                    elif user_state == 'найти id города':
                         self.find_city_id_command_handler(event)
-
+                        new_state = 'None'
+                        self.db.update_user_state(event.user_id, new_state)
 
 if __name__ == '__main__':
     bot = MyBot(GROUP_TOKEN, USER_TOKEN)
