@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, insert, MetaData
+from sqlalchemy import create_engine, insert
 from db.model import users, blacklist, favorite
 
 
@@ -23,6 +23,22 @@ class DataBaseConnection():
             user_id=user_id, 
             city_id=city_id, 
             sex=sex_id
+            )
+        with self.engine.connect() as con:
+            con.execute(stmt)
+
+    def add_to_black_list(self, user_id, blocked_user_id):
+        stmt = blacklist.insert().values(
+            user_id=user_id, 
+            blocked_user_id=blocked_user_id, 
+            )
+        with self.engine.connect() as con:
+            con.execute(stmt)
+    
+    def add_to_favorite_list(self, user_id, favorite_user_id):
+        stmt = blacklist.insert().values(
+            user_id=user_id, 
+            favorite_user_id=favorite_user_id, 
             )
         with self.engine.connect() as con:
             con.execute(stmt)
