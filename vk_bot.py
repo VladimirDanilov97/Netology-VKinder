@@ -1,3 +1,4 @@
+from email import message
 from pprint import pprint
 from vk_api.keyboard import VkKeyboard
 from db.database import DataBaseConnection
@@ -8,8 +9,23 @@ from vk_bot_functions import MyBotFunctions
 
 class MyBot(MyBotFunctions):
 
-    def search_command_handler(self):
-        pass
+    def search_command_handler(self, event):
+        user_search_params = event.text.split()
+        city_id = int(user_search_params[0])
+        sex_id = int(user_search_params[1])
+        age_from = int(user_search_params[2])
+        age_to = int(user_search_params[3])
+        offset = 0
+        suitable_users = self.find_suitable_users(city_id, sex_id, age_from, age_to, offset)
+        offset += len(suitable_users)
+        for user in suitable_users:
+            top_photo = self.get_top_3_photo(user['id'])
+            message = f"{user['first_name']} {user['last_name']}\n\
+                         https://vk.com/id{user['id']}"
+            print(user)
+            self.send_media(user_id=event.user_id, media_owner_id=user['id'], media_ids=top_photo, message=message)
+            
+
 
     def user_command_handler(self, event)-> None: 
         request = event.text.lower()
@@ -32,7 +48,7 @@ class MyBot(MyBotFunctions):
                                            Например 1 1 20 25')
 
         else:
-            self.write_msg(event.user_id, "Не понял вашего ответа...")
+            self.write_msg(event.user_id, "Не понял вашего запроса...")
 
     def find_city_id_command_handler(self, event):
         request = event.text.lower()
@@ -60,7 +76,7 @@ class MyBot(MyBotFunctions):
                         self.write_msg(event.user_id, 'Выберите команду', bot_keyboard)
                     
                     elif user_state == 'поиск':
-                        pass
+                        self.search_command_handler(event)
 
                     elif user_state == 'None':
                         self.user_command_handler(event)
@@ -73,5 +89,4 @@ class MyBot(MyBotFunctions):
 
 if __name__ == '__main__':
     bot = MyBot(GROUP_TOKEN, USER_TOKEN)
-  
-    pprint(bot.get_top_3_photo(1))
+    pprint(bot.start_listen())

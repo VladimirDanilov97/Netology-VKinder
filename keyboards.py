@@ -8,6 +8,7 @@ bot_keyboard.add_button('Найти id Города', VkKeyboardColor.PRIMARY)
 bot_keyboard.add_line()
 bot_keyboard.add_button('Начать сначала', VkKeyboardColor.NEGATIVE)
 
+
 search_option_keyboard = VkKeyboard(one_time=False)
 search_option_keyboard.add_button('Вперед', VkKeyboardColor.PRIMARY)
 search_option_keyboard.add_button('Назад', VkKeyboardColor.PRIMARY)

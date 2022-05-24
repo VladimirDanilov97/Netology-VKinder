@@ -37,7 +37,7 @@ class MyBotFunctions():
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
 
-    def find_suitable_user_ids(self, city_id, sex_id, age_from, age_to, offset=0): # выдает по 20 id за 1 запрос
+    def find_suitable_users(self, city_id, sex_id, age_from, age_to, offset=0): # выдает по 20 id за 1 запрос
         """Находит id пользователей подоходящих по указанным критериям
            city_id - id города;
            sex_id - id пола;
@@ -45,19 +45,29 @@ class MyBotFunctions():
            age_to - возраст до;"""
         params = {'city': city_id, 'sex': sex_id,
                   'age_from': age_from, 'age_to': age_to,
-                  'offset': offset, 'has_photo': 1}
+                  'offset': offset, 'has_photo': 1,
+                  'fields': 'relation', 'is_closed': 'false'}
+                  
         response = self.user_vk.method('users.search', params)
-        ids = [item['id'] for item in response['items']]
-        return ids
-    
-    def get_photo_by_id(self, user_id):
-        params = {'owner_id': user_id, 'album_id': 'profile', 'extended': 1}
-        response = self.user_vk.method('photos.get', params)
-        return response['items']
+        users = [item for item in response['items'] if int(item.get('relation', -1)) in (-1, 1, 6)]
+        return users
 
     def get_top_3_photo(self, user_id):
         '''Возвращает топ-3 фотографии максимального размера отсортированные по сумме лайков и комментариев'''
-        photos = self.get_photo_by_id(user_id)
+        params = {'owner_id': user_id, 'album_id': 'profile', 'extended': 1}
+        response = self.user_vk.method('photos.get', params)
+        photos = response['items']
         sorted_photo = sorted(photos, reverse=True, key=lambda photo: int(photo['likes']['count'])+int(photo['comments']['count']))[:3]
-        max_size_photo = [photo['sizes'][-1]['url'] for photo in sorted_photo]
-        return max_size_photo
+        photo_ids = [photo['id'] for photo in sorted_photo]
+        return photo_ids
+    
+    def send_media(self, user_id, media_owner_id, media_ids: list, message, keyboard: VkKeyboard=None, media_type='photo'):
+       
+        media_urls = [f'{media_type}{media_owner_id}_{media_id}' for media_id in media_ids]
+        print(media_urls)
+        params = {'user_id': user_id, 'message': message,
+                  'attachment': ','.join(media_urls), 'random_id': randrange(10 ** 7)}
+        if keyboard is not None:
+            params['keyboard'] = keyboard.get_keyboard()
+        self.vk.method('messages.send', params)
+    
