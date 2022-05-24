@@ -5,24 +5,33 @@ from config import GROUP_TOKEN, USER_TOKEN
 from vk_api.longpoll import VkEventType
 from keyboards import bot_keyboard, search_option_keyboard
 from vk_bot_functions import MyBotFunctions
-
+from datetime import date
 class MyBot(MyBotFunctions):
 
     def __init__(self, token, user_token) -> None:
         super().__init__(token, user_token)
         self.offset = {}
         self.suitable_users_gen = {}
+        self.last_search_params = {}
 
     def search_command_handler(self, event):
-        print(f'{event.text}')                                  # PRINT
+
         if re.match(r'\d+ \d+ \d+ \d+', event.text):
             user_search_params = event.text.split()
-            city_id = int(user_search_params[0])
-            sex_id = int(user_search_params[1])
-            age_from = int(user_search_params[2])
-            age_to = int(user_search_params[3])
+            self.last_search_params[event.user_id] = {
+                'city_id': int(user_search_params[0]),
+                'sex_id': int(user_search_params[1]),
+                'age_from': int(user_search_params[2]),
+                'age_to': int(user_search_params[3])
+            }
             self.offset[event.user_id] = 0
-            self.suitable_users_gen[event.user_id] = self.find_suitable_users(city_id, sex_id, age_from, age_to, self.offset[event.user_id])
+            self.suitable_users_gen[event.user_id] = self.find_suitable_users(
+                                                        self.last_search_params[event.user_id]['city_id'], 
+                                                        self.last_search_params[event.user_id]['sex_id'],
+                                                        self.last_search_params[event.user_id]['age_from'], 
+                                                        self.last_search_params[event.user_id]['age_to'],
+                                                        self.offset[event.user_id]
+                                                        )
             event.text = 'следующий'
             return self.search_command_handler(event)
         
@@ -30,16 +39,33 @@ class MyBot(MyBotFunctions):
             try:
                 user_to_send = next(self.suitable_users_gen[event.user_id])
             except StopIteration:
-                self.offset[event.user_id] += 20
-                self.suitable_users_gen[event.user_id] = self.find_suitable_users(city_id, sex_id, age_from, age_to, self.offset[event.user_id])
-                user_to_send = next(self.suitable_users_gen[event.user_id])
+                self.offset[event.user_id] += self._count
+                self.suitable_users_gen[event.user_id] = self.find_suitable_users(
+                                                            self.last_search_params[event.user_id]['city_id'], 
+                                                            self.last_search_params[event.user_id]['sex_id'],
+                                                            self.last_search_params[event.user_id]['age_from'], 
+                                                            self.last_search_params[event.user_id]['age_to'],
+                                                            self.offset[event.user_id]
+                                                            )
+                try:
+                    user_to_send = next(self.suitable_users_gen[event.user_id])
+                except StopIteration:
+                    new_state = 'None'
+                    self.db.update_user_state(event.user_id, new_state=new_state)
+                    self.write_msg(event.user_id, 'Больше нет пользователей подходящих по запросу', bot_keyboard)
+                    event.text = 'начать поиск'
+                    return self.user_command_handler(event)
             try:
                 user_photo = self.get_top_3_photo(user_to_send['id']) 
             except:
                 event.text = 'следующий'
-                return self.search_command_handler(event) 
+                return self.search_command_handler(event)
+
+            last_seen = date.fromtimestamp(int(user_to_send['last_seen']['time'])).strftime('%d.%m.%Y')
             message = f"{user_to_send['first_name']} {user_to_send['last_name']}\n\
+                        Заходил в последний раз: {last_seen}\n\
                         https://vk.com/id{user_to_send['id']}"
+                        
             self.send_media(user_id=event.user_id,
                             media_owner_id=user_to_send['id'],
                             media_ids=user_photo,
@@ -104,11 +130,16 @@ class MyBot(MyBotFunctions):
 
                     elif user_state == 'None':
                         self.user_command_handler(event)
-                        
-
-                  
+                    
+                    elif user_state == 'найти id города':
+                        self.find_city_id_command_handler(event)
+                        new_state = 'None'
+                        self.db.update_user_state(event.user_id, new_state)
                     
 
 if __name__ == '__main__':
     bot = MyBot(GROUP_TOKEN, USER_TOKEN)
-    pprint(bot.start_listen())
+    try:
+        pprint(bot.start_listen())
+    except KeyboardInterrupt:
+        pprint(bot.offset)

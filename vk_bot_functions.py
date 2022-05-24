@@ -11,6 +11,7 @@ class MyBotFunctions():
         self.user_vk = VkApi(token=user_token) # не все методы работают с GROUP_TOKEN
         self.longpoll = VkLongPoll(self.vk)
         self.db = DataBaseConnection()
+        self._count = 1000
 
     def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None:
         '''Отправляет пользователю с id=user_id сообщение с текстом message'''
@@ -46,7 +47,8 @@ class MyBotFunctions():
         params = {'city': city_id, 'sex': sex_id,
                   'age_from': age_from, 'age_to': age_to,
                   'offset': offset, 'has_photo': 1,
-                  'fields': 'relation', 'is_closed': 'false'}
+                  'fields': 'relation, last_seen', 'is_closed': 'false',
+                  'count': self.__count}
                   
         response = self.user_vk.method('users.search', params)
         users = [item for item in response['items'] if int(item.get('relation', -1)) in (-1, 1, 6)]
