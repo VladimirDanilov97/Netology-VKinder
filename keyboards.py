@@ -10,8 +10,7 @@ bot_keyboard.add_button('Начать сначала', VkKeyboardColor.NEGATIVE)
 
 
 search_option_keyboard = VkKeyboard(one_time=False)
-search_option_keyboard.add_button('Вперед', VkKeyboardColor.PRIMARY)
-search_option_keyboard.add_button('Назад', VkKeyboardColor.PRIMARY)
-search_option_keyboard.add_line()
+search_option_keyboard.add_button('Следующий', VkKeyboardColor.PRIMARY)
 search_option_keyboard.add_button('В избранное', VkKeyboardColor.POSITIVE)
-search_option_keyboard.add_button('В черный список', VkKeyboardColor.NEGATIVE)
+search_option_keyboard.add_line()
+search_option_keyboard.add_button('Назад к меню', VkKeyboardColor.PRIMARY)

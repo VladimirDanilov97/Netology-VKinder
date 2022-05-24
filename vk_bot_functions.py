@@ -50,7 +50,8 @@ class MyBotFunctions():
                   
         response = self.user_vk.method('users.search', params)
         users = [item for item in response['items'] if int(item.get('relation', -1)) in (-1, 1, 6)]
-        return users
+        for user in users:
+            yield user
 
     def get_top_3_photo(self, user_id):
         '''Возвращает топ-3 фотографии максимального размера отсортированные по сумме лайков и комментариев'''
@@ -64,10 +65,8 @@ class MyBotFunctions():
     def send_media(self, user_id, media_owner_id, media_ids: list, message, keyboard: VkKeyboard=None, media_type='photo'):
        
         media_urls = [f'{media_type}{media_owner_id}_{media_id}' for media_id in media_ids]
-        print(media_urls)
         params = {'user_id': user_id, 'message': message,
                   'attachment': ','.join(media_urls), 'random_id': randrange(10 ** 7)}
         if keyboard is not None:
             params['keyboard'] = keyboard.get_keyboard()
         self.vk.method('messages.send', params)
-    
