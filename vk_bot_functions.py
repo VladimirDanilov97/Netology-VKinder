@@ -38,7 +38,7 @@ class MyBotFunctions():
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
 
-    def find_suitable_users(self, city_id, sex_id, age_from, age_to, offset=0): # выдает по 20 id за 1 запрос
+    def find_suitable_users(self, city_id, sex_id, age_from, age_to): # выдает по 1000 id за 1 запрос
         """Находит id пользователей подоходящих по указанным критериям
            city_id - id города;
            sex_id - id пола;
@@ -46,14 +46,13 @@ class MyBotFunctions():
            age_to - возраст до;"""
         params = {'city': city_id, 'sex': sex_id,
                   'age_from': age_from, 'age_to': age_to,
-                  'offset': offset, 'has_photo': 1,
+                  'has_photo': 1,
                   'fields': 'relation, last_seen', 'is_closed': 'false',
-                  'count': self.__count}
+                  'count': self._count}
                   
         response = self.user_vk.method('users.search', params)
         users = [item for item in response['items'] if int(item.get('relation', -1)) in (-1, 1, 6)]
-        for user in users:
-            yield user
+        return users
 
     def get_top_3_photo(self, user_id):
         '''Возвращает топ-3 фотографии максимального размера отсортированные по сумме лайков и комментариев'''
