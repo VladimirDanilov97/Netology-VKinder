@@ -42,6 +42,15 @@ class DataBaseConnection():
             with con.begin():
                 con.execute(stmt)
     
+    def is_user_in_black_list(self, user_id, blocked_user_id):
+        stmt = blacklist.select().where(blacklist.c.user_id == user_id, blacklist.c.blocked_user_id == blocked_user_id)
+        with self.engine.connect() as con:
+            with con.begin():
+                response = list(con.execute(stmt))
+                if response:
+                    return True
+                return False
+    
     def add_to_favorite_list(self, user_id, favorite_user_id):
         stmt = favorite.insert().values(
             user_id=user_id, 
@@ -67,4 +76,3 @@ class DataBaseConnection():
 
 if __name__ == '__main__':
     db = DataBaseConnection()
-    print(db.get_user_state(170264822))
