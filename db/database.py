@@ -1,6 +1,6 @@
 from matplotlib import use
-from sqlalchemy import create_engine, insert
-from db.model import users, blacklist, favorite, user_state_machine
+from sqlalchemy import create_engine, insert, select
+from model import users, blacklist, favorite, user_state_machine
 
 
 class DataBaseConnection():
@@ -51,6 +51,13 @@ class DataBaseConnection():
                     return True
                 return False
     
+    def get_all_blocked_users(self, user_id):
+        stmt = select(blacklist.c.blocked_user_id).where(blacklist.c.user_id == user_id)
+        with self.engine.connect() as con:
+            with con.begin():
+                response = list(con.execute(stmt))
+                return response
+
     def add_to_favorite_list(self, user_id, favorite_user_id):
         stmt = favorite.insert().values(
             user_id=user_id, 
@@ -76,3 +83,4 @@ class DataBaseConnection():
 
 if __name__ == '__main__':
     db = DataBaseConnection()
+    print(db.get_all_blocked_users(170264822))

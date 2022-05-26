@@ -17,6 +17,11 @@ class MyBot(MyBotFunctions):
 
     def search_command_handler(self, event):
 
+        '''Если запрос попадает по регулярное выражение метод сохраняет в last_search_params параметры запроса
+           с ключом user_id. В цикле совершается несколько запросов для все возрастов, чтобы обойти ограничение в 
+           выдаче пользователей, полученные пользователи сохраняются в lists_users_to_send с ключом user_id
+           список перемешивается и event.text меняется, чтобы сработало следующее условие и метод вызывается рекурсивно'''
+
         if re.match(r'\d+ \d+ \d+ \d+', event.text):
             user_search_params = event.text.split()
             self.last_search_params[event.user_id] = {
@@ -57,7 +62,8 @@ class MyBot(MyBotFunctions):
                 self.write_msg(event.user_id, 'Больше нет пользователей подходящих по запросу', bot_keyboard)
                 event.text = 'начать поиск'
                 return self.user_command_handler(event)
-            if not self.db.is_user_in_black_list(event.user_id, user_to_send['id']):
+
+            if not self.db.is_user_in_black_list(event.user_id, user_to_send['id']): # лучше организовать удаление всех заблокированных пользователей в lists_users_to_send
                 try:
                     user_photo = self.get_top_3_photo(user_to_send['id']) 
                 except:
@@ -83,7 +89,11 @@ class MyBot(MyBotFunctions):
                 return self.search_command_handler(event)
 
         elif event.text.lower() == 'не показывать больше':
-            self.db.add_to_black_list(user_id=event.user_id, blocked_user_id=self.lists_users_to_send[event.user_id][self.user_search_index[event.user_id]-1])
+ 
+            self.db.add_to_black_list(
+                user_id=int(event.user_id),
+                blocked_user_id=int(self.lists_users_to_send[event.user_id][self.user_search_index[event.user_id]-1]['id'])
+                )
             event.text = 'следующий'
             return self.search_command_handler(event)
         

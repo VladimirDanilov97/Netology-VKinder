@@ -13,21 +13,27 @@ class MyBotFunctions():
         self.db = DataBaseConnection()
         self._count = 1000
 
-    def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None:
-        '''Отправляет пользователю с id=user_id сообщение с текстом message'''
+    def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None: 
+
+        '''Отправляет пользователю с id=user_id сообщение с текстом message, можно прикрепить клавиатуру'''
+
         params = {'user_id': user_id, 'message': message,  'random_id': randrange(10 ** 7)}
         if keyboard is not None:
             params['keyboard'] = keyboard.get_keyboard()
         self.vk.method('messages.send', params)
 
-    def find_city(self, query):
+    def find_city(self, query): 
+        
         '''Находить id города по запросу query. Возвращает первые 10 результатов'''
+
         params = {'q': query, 'country_id': 1}
         response = self.user_vk.method('database.getCities', params)
         return response['items'][:10]
 
-    def register_user(self, user_id: int) -> None:
+    def register_user(self, user_id: int) -> None: 
+
         """Добавляет id пользователя, пол и id города в таблицу users базы данных"""
+
         fields_to_get = ['city', 'sex', 'bdate']
         response = self.vk.method('users.get',
                                  {'user_id': user_id,
@@ -39,11 +45,13 @@ class MyBotFunctions():
         self.db.register_user(id, city_id, sex_id)
 
     def find_suitable_users(self, city_id, sex_id, age_from, age_to): # выдает по 1000 id за 1 запрос
+
         """Находит id пользователей подоходящих по указанным критериям
            city_id - id города;
            sex_id - id пола;
            age_from - возраст от;
            age_to - возраст до;"""
+
         params = {'city': city_id, 'sex': sex_id,
                   'age_from': age_from, 'age_to': age_to,
                   'has_photo': 1,
@@ -55,7 +63,9 @@ class MyBotFunctions():
         return users
 
     def get_top_3_photo(self, user_id):
+
         '''Возвращает топ-3 фотографии максимального размера отсортированные по сумме лайков и комментариев'''
+
         params = {'owner_id': user_id, 'album_id': 'profile', 'extended': 1}
         response = self.user_vk.method('photos.get', params)
         photos = response['items']
@@ -65,6 +75,8 @@ class MyBotFunctions():
     
     def send_media(self, user_id, media_owner_id, media_ids: list, message, keyboard: VkKeyboard=None, media_type='photo'):
        
+        '''Отправлет user_id фотографии по id владельца и id фотографии, с текстом message и клавиатурой  keyboard'''
+
         media_urls = [f'{media_type}{media_owner_id}_{media_id}' for media_id in media_ids]
         params = {'user_id': user_id, 'message': message,
                   'attachment': ','.join(media_urls), 'random_id': randrange(10 ** 7)}
