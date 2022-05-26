@@ -1,30 +1,31 @@
 import re
+import json
 from random import shuffle
 from config import GROUP_TOKEN, USER_TOKEN
 from vk_api.longpoll import VkEventType
 from keyboards import bot_keyboard, search_option_keyboard
 from vk_bot_functions import MyBotFunctions
 from datetime import date
+
 class MyBot(MyBotFunctions):
 
     def __init__(self, token, user_token) -> None:
         super().__init__(token, user_token)
-     
-     
+   
         self.lists_users_to_send = {}
-        self.last_search_params = {}
         self.user_search_index = {}
 
     def search_command_handler(self, event):
 
-        '''Если запрос попадает по регулярное выражение метод сохраняет в last_search_params параметры запроса
+        '''Если запрос попадает под регулярное выражение метод сохраняет в last_search_params параметры запроса
            с ключом user_id. В цикле совершается несколько запросов для все возрастов, чтобы обойти ограничение в 
            выдаче пользователей, полученные пользователи сохраняются в lists_users_to_send с ключом user_id
            список перемешивается и event.text меняется, чтобы сработало следующее условие и метод вызывается рекурсивно'''
 
         if re.match(r'\d+ \d+ \d+ \d+', event.text):
             user_search_params = event.text.split()
-            self.last_search_params[event.user_id] = {
+            
+            last_search_params = {
                 'city_id': int(user_search_params[0]),
                 'sex_id': int(user_search_params[1]),
                 'age_from': int(user_search_params[2]),
@@ -32,22 +33,34 @@ class MyBot(MyBotFunctions):
             }
             
             for age in range(int(user_search_params[2]), int(user_search_params[3])+1):
+                # suitable_users = self.find_suitable_users(
+                #                                         last_search_params['city_id'], 
+                #                                         last_search_params['sex_id'],
+                #                                         age_from = age,
+                #                                         age_to = age
+                #                                         )
+                                                      
                 if self.lists_users_to_send.get(event.user_id):
                     self.lists_users_to_send[event.user_id].append(self.find_suitable_users(
-                                                        self.last_search_params[event.user_id]['city_id'], 
-                                                        self.last_search_params[event.user_id]['sex_id'],
+                                                        last_search_params['city_id'], 
+                                                        last_search_params['sex_id'],
                                                         age_from = age,
                                                         age_to = age
                                                         ))
                 else:
                     self.lists_users_to_send[event.user_id]= self.find_suitable_users(
-                                                        self.last_search_params[event.user_id]['city_id'], 
-                                                        self.last_search_params[event.user_id]['sex_id'],
+                                                        last_search_params['city_id'], 
+                                                        last_search_params['sex_id'],
                                                         age_from = age,
                                                         age_to = age
                                                         )
                     self.user_search_index[event.user_id] = 0
+
+            blocked_users = self.db.get_all_blocked_by_user(event.user_id)
+            # добавить удаление пользователся из списка
+
             shuffle(self.lists_users_to_send[event.user_id])
+            
             event.text = 'следующий'
             return self.search_command_handler(event)
         
@@ -104,11 +117,13 @@ class MyBot(MyBotFunctions):
 
     def user_command_handler(self, event)-> None: 
         request = event.text.lower()
+
         if request == "start":
             if self.db.is_user_registered(event.user_id):
                 self.write_msg(event.user_id, 'Вы уже зарегистрированы', bot_keyboard)
             else:
                 self.register_user(event.user_id)
+
                 message = 'Вы зарегистрированы\n\
                            Если знаете id нужного города нажмите начать поиск.\n\
                            Если нет, нажмите "Найти id города" и отправьте название города следующим сообщением'

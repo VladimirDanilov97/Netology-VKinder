@@ -43,6 +43,7 @@ class MyBotFunctions():
         city_id = int(response['city']['id'])
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
+       
 
     def find_suitable_users(self, city_id, sex_id, age_from, age_to): # выдает по 1000 id за 1 запрос
 
@@ -54,12 +55,15 @@ class MyBotFunctions():
 
         params = {'city': city_id, 'sex': sex_id,
                   'age_from': age_from, 'age_to': age_to,
-                  'has_photo': 1,
+                  'has_photo': 1, 'status': 6,
                   'fields': 'relation, last_seen', 'is_closed': 'false',
                   'count': self._count}
                   
         response = self.user_vk.method('users.search', params)
-        users = [item for item in response['items'] if int(item.get('relation', -1)) in (-1, 1, 6)]
+        users = response['items'] 
+        params['status'] = 1                                   
+        response = self.user_vk.method('users.search', params)
+        users.extend(response['items']) 
         return users
 
     def get_top_3_photo(self, user_id):
@@ -69,7 +73,7 @@ class MyBotFunctions():
         params = {'owner_id': user_id, 'album_id': 'profile', 'extended': 1}
         response = self.user_vk.method('photos.get', params)
         photos = response['items']
-        sorted_photo = sorted(photos, reverse=True, key=lambda photo: int(photo['likes']['count'])+int(photo['comments']['count']))[:3]
+        sorted_photo = sorted(photos, reverse=True, key=lambda photo: int(photo['likes']['count']))[:3]
         photo_ids = [photo['id'] for photo in sorted_photo]
         return photo_ids
     
