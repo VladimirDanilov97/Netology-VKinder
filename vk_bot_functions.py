@@ -11,7 +11,7 @@ class MyBotFunctions():
         self.user_vk = VkApi(token=user_token) # не все методы работают с GROUP_TOKEN
         self.longpoll = VkLongPoll(self.vk)
         self.db = DataBaseConnection()
-        self._count = 1000
+        self._count = 1
 
     def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None: 
 
@@ -43,9 +43,10 @@ class MyBotFunctions():
         city_id = int(response['city']['id'])
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
+        self.db.add_user_offset(user_id=user_id)
        
 
-    def find_suitable_users(self, city_id, sex_id, age_from, age_to): # выдает по 1000 id за 1 запрос
+    def find_suitable_users(self, city_id, sex_id, age, offset): # выдает по 1000 id за 1 запрос
 
         """Находит id пользователей подоходящих по указанным критериям
            city_id - id города;
@@ -54,16 +55,13 @@ class MyBotFunctions():
            age_to - возраст до;"""
 
         params = {'city': city_id, 'sex': sex_id,
-                  'age_from': age_from, 'age_to': age_to,
-                  'has_photo': 1, 'status': 6,
+                  'age_from': age, 'age_to': age,
+                  'has_photo': 1, 'offset': offset,
                   'fields': 'relation, last_seen', 'is_closed': 'false',
                   'count': self._count}
                   
         response = self.user_vk.method('users.search', params)
         users = response['items'] 
-        params['status'] = 1                                   
-        response = self.user_vk.method('users.search', params)
-        users.extend(response['items']) 
         return users
 
     def get_top_3_photo(self, user_id):

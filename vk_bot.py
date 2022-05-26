@@ -1,5 +1,4 @@
 import re
-import json
 from random import shuffle
 from config import GROUP_TOKEN, USER_TOKEN
 from vk_api.longpoll import VkEventType
@@ -12,71 +11,48 @@ class MyBot(MyBotFunctions):
     def __init__(self, token, user_token) -> None:
         super().__init__(token, user_token)
    
-        self.lists_users_to_send = {}
-        self.user_search_index = {}
-
+        
     def search_command_handler(self, event):
 
-        '''Если запрос попадает под регулярное выражение метод сохраняет в last_search_params параметры запроса
+        '''Если запрос попадает под регулярное выражение метод сохраняет в бд параметры запроса
            с ключом user_id. В цикле совершается несколько запросов для все возрастов, чтобы обойти ограничение в 
            выдаче пользователей, полученные пользователи сохраняются в lists_users_to_send с ключом user_id
            список перемешивается и event.text меняется, чтобы сработало следующее условие и метод вызывается рекурсивно'''
 
-        if re.match(r'\d+ \d+ \d+ \d+', event.text):
+        if re.match(r'\d+ \d+ \d+', event.text):
             user_search_params = event.text.split()
             
-            last_search_params = {
+            search_params = {
                 'city_id': int(user_search_params[0]),
                 'sex_id': int(user_search_params[1]),
-                'age_from': int(user_search_params[2]),
-                'age_to': int(user_search_params[3])
+                'age': int(user_search_params[2]),
             }
+            self.db.save_search_params(user_id=event.user_id, # Создать метод сохранения параметров поиска в базу данных в таблицу user_search_params
+                                       city_id=search_params['city_id'],
+                                       sex_id=search_params['sex_id'],
+                                       age=search_params['age'])
             
-            for age in range(int(user_search_params[2]), int(user_search_params[3])+1):
-                # suitable_users = self.find_suitable_users(
-                #                                         last_search_params['city_id'], 
-                #                                         last_search_params['sex_id'],
-                #                                         age_from = age,
-                #                                         age_to = age
-                #                                         )
-                                                      
-                if self.lists_users_to_send.get(event.user_id):
-                    self.lists_users_to_send[event.user_id].append(self.find_suitable_users(
-                                                        last_search_params['city_id'], 
-                                                        last_search_params['sex_id'],
-                                                        age_from = age,
-                                                        age_to = age
-                                                        ))
-                else:
-                    self.lists_users_to_send[event.user_id]= self.find_suitable_users(
-                                                        last_search_params['city_id'], 
-                                                        last_search_params['sex_id'],
-                                                        age_from = age,
-                                                        age_to = age
-                                                        )
-                    self.user_search_index[event.user_id] = 0
-
-            blocked_users = self.db.get_all_blocked_by_user(event.user_id)
-            # добавить удаление пользователся из списка
-
-            shuffle(self.lists_users_to_send[event.user_id])
-            
+            self.db.set_user_offset_to_zero(user_id=event.user_id) # 1. Добавить в DataBaseConnection метод update оффсета 
+                                
             event.text = 'следующий'
             return self.search_command_handler(event)
         
         elif event.text.lower() == 'следующий':
-            try:
-                user_to_send = self.lists_users_to_send[event.user_id][self.user_search_index[event.user_id]]   
-                self.user_search_index[event.user_id] += 1
             
-            except StopIteration:
-                new_state = 'None'
-                self.db.update_user_state(event.user_id, new_state=new_state)
-                self.write_msg(event.user_id, 'Больше нет пользователей подходящих по запросу', bot_keyboard)
-                event.text = 'начать поиск'
-                return self.user_command_handler(event)
+            offset = self.db.get_user_offset(user_id=event.user_id) # Добавить метод для получения оффсета по id в DataBaseConnection
+            search_params = self.db.get_search_params(user_id=event.user_id)
 
-            if not self.db.is_user_in_black_list(event.user_id, user_to_send['id']): # лучше организовать удаление всех заблокированных пользователей в lists_users_to_send
+            user_to_send = self.find_suitable_users(                 
+                                                    search_params['city_id'], 
+                                                    search_params['sex_id'],
+                                                    age_from = search_params['age'],
+                                                    age_to = search_params['age'],
+                                                    offset=offset
+                                                    )
+            new_offset = offset + 1
+            self.db.update_user_offset(user_id=event.user_id, new_offset=new_offset) # Добавить метод для update оффсета в DataBaseConnection
+
+            if not self.db.is_user_in_black_list(event.user_id, user_to_send['id']):
                 try:
                     user_photo = self.get_top_3_photo(user_to_send['id']) 
                 except:
@@ -153,6 +129,7 @@ class MyBot(MyBotFunctions):
                               Город: {city.get('title', '-')}; \
                               Район: {city.get('area', '-')}; \
                               Регион: {city.get('region', '-')}\n"
+           
             self.write_msg(event.user_id, msg_text)
         else:
             self.write_msg(event.user_id, 'Ничего не найдено')

@@ -27,13 +27,13 @@ user_state_machine = Table('user_state_machine', metadata,
     Column('state', String(80), default='None')
     )
 
-
-list_of_user_to_send = Table('list_of_user_to_send', metadata,
+user_search_params = Table('user_search_params', metadata,
     Column('id', Integer, primary_key=True),
-    Column('user_id', Integer),
-    Column('user_to_send', JSON),
-    Column('user_id_to_send', Integer)
-    )
+    Column('user_id', Integer, ForeignKey('users.user_id')),
+    Column('city_id', Integer),
+    Column('sex_id', Integer),
+    Column('age', Integer)
+)
 
 if __name__ == '__main__':
     metadata.create_all(engine)
