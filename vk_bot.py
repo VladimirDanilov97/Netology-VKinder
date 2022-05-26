@@ -32,7 +32,7 @@ class MyBot(MyBotFunctions):
                                        sex_id=search_params['sex_id'],
                                        age=search_params['age'])
             
-            self.db.set_user_offset_to_zero(user_id=event.user_id) # 1. Добавить в DataBaseConnection метод update оффсета 
+            self.db.set_user_offset_to_zero(user_id=event.user_id) # Добавить в DataBaseConnection метод update оффсета 
                                 
             event.text = 'следующий'
             return self.search_command_handler(event)
@@ -40,7 +40,7 @@ class MyBot(MyBotFunctions):
         elif event.text.lower() == 'следующий':
             
             offset = self.db.get_user_offset(user_id=event.user_id) # Добавить метод для получения оффсета по id в DataBaseConnection
-            search_params = self.db.get_search_params(user_id=event.user_id)
+            search_params = self.db.get_search_params(user_id=event.user_id) # Добавить метод получения параметров последнего поиска
 
             user_to_send = self.find_suitable_users(                 
                                                     search_params['city_id'], 
