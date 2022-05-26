@@ -15,9 +15,7 @@ class MyBot(MyBotFunctions):
     def search_command_handler(self, event):
 
         '''Если запрос попадает под регулярное выражение метод сохраняет в бд параметры запроса
-           с ключом user_id. В цикле совершается несколько запросов для все возрастов, чтобы обойти ограничение в 
-           выдаче пользователей, полученные пользователи сохраняются в lists_users_to_send с ключом user_id
-           список перемешивается и event.text меняется, чтобы сработало следующее условие и метод вызывается рекурсивно'''
+           '''
 
         if re.match(r'\d+ \d+ \d+', event.text):
             user_search_params = event.text.split()
@@ -27,6 +25,7 @@ class MyBot(MyBotFunctions):
                 'sex_id': int(user_search_params[1]),
                 'age': int(user_search_params[2]),
             }
+
             self.db.save_search_params(user_id=event.user_id, # Создать метод сохранения параметров поиска в базу данных в таблицу user_search_params
                                        city_id=search_params['city_id'],
                                        sex_id=search_params['sex_id'],
@@ -91,6 +90,21 @@ class MyBot(MyBotFunctions):
             self.db.update_user_state(event.user_id, new_state)
             self.write_msg(event.user_id, 'Выберите команду', bot_keyboard)
 
+    def find_city_id_command_handler(self, event):
+        request = event.text.lower()
+        response = self.find_city(request)
+        if response:
+            msg_text = 'По запросу найдено:\n'
+            for city in response:
+                msg_text += f"id: {city.get('id', '-')}; \
+                              Город: {city.get('title', '-')}; \
+                              Район: {city.get('area', '-')}; \
+                              Регион: {city.get('region', '-')}\n"
+           
+            self.write_msg(event.user_id, msg_text)
+        else:
+            self.write_msg(event.user_id, 'Ничего не найдено')
+
     def user_command_handler(self, event)-> None: 
         request = event.text.lower()
 
@@ -118,21 +132,6 @@ class MyBot(MyBotFunctions):
 
         else:
             self.write_msg(event.user_id, "Не понял вашего запроса...")
-
-    def find_city_id_command_handler(self, event):
-        request = event.text.lower()
-        response = self.find_city(request)
-        if response:
-            msg_text = 'По запросу найдено:\n'
-            for city in response:
-                msg_text += f"id: {city.get('id', '-')}; \
-                              Город: {city.get('title', '-')}; \
-                              Район: {city.get('area', '-')}; \
-                              Регион: {city.get('region', '-')}\n"
-           
-            self.write_msg(event.user_id, msg_text)
-        else:
-            self.write_msg(event.user_id, 'Ничего не найдено')
 
     def start_listen(self) -> None:     
         for event in self.longpoll.listen():
