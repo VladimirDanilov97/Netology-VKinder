@@ -13,6 +13,7 @@ class MyBotFunctions():
         self.db = DataBaseConnection()
         self._count = 1
 
+
     def write_msg(self, user_id: int, message: str, keyboard: VkKeyboard=None) -> None: 
 
         '''Отправляет пользователю с id=user_id сообщение с текстом message, можно прикрепить клавиатуру'''
@@ -22,6 +23,7 @@ class MyBotFunctions():
             params['keyboard'] = keyboard.get_keyboard()
         self.vk.method('messages.send', params)
 
+
     def find_city(self, query): 
         
         '''Находить id города по запросу query. Возвращает первые 10 результатов'''
@@ -29,6 +31,7 @@ class MyBotFunctions():
         params = {'q': query, 'country_id': 1}
         response = self.user_vk.method('database.getCities', params)
         return response['items'][:10]
+
 
     def register_user(self, user_id: int) -> None: 
 
@@ -43,10 +46,9 @@ class MyBotFunctions():
         city_id = int(response['city']['id'])
         sex_id = int(response['sex'])   
         self.db.register_user(id, city_id, sex_id)
-        self.db.add_user_offset(user_id=user_id)
-       
 
-    def find_suitable_users(self, city_id, sex_id, age, offset): # выдает по 1000 id за 1 запрос
+
+    def find_suitable_users(self, city_id, sex_id, age, offset): 
 
         """Находит id пользователей подоходящих по указанным критериям
            city_id - id города;
@@ -61,8 +63,9 @@ class MyBotFunctions():
                   'count': self._count}
                   
         response = self.user_vk.method('users.search', params)
-        users = response['items'] 
+        users = response['items'][0] 
         return users
+
 
     def get_top_3_photo(self, user_id):
 
@@ -74,7 +77,8 @@ class MyBotFunctions():
         sorted_photo = sorted(photos, reverse=True, key=lambda photo: int(photo['likes']['count']))[:3]
         photo_ids = [photo['id'] for photo in sorted_photo]
         return photo_ids
-    
+
+
     def send_media(self, user_id, media_owner_id, media_ids: list, message, keyboard: VkKeyboard=None, media_type='photo'):
        
         '''Отправлет user_id фотографии по id владельца и id фотографии, с текстом message и клавиатурой  keyboard'''
@@ -85,3 +89,12 @@ class MyBotFunctions():
         if keyboard is not None:
             params['keyboard'] = keyboard.get_keyboard()
         self.vk.method('messages.send', params)
+
+    def get_user(self, user_id):
+        params = {'user_ids': user_id,
+                  'fields': 'last_seen',
+                  }
+                  
+        response = self.user_vk.method('users.get', params)
+        users = response[0]
+        return users

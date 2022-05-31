@@ -6,6 +6,7 @@ bot_keyboard = VkKeyboard(one_time=False)
 bot_keyboard.add_button('Начать поиск', VkKeyboardColor.POSITIVE)
 bot_keyboard.add_button('Найти id Города', VkKeyboardColor.PRIMARY)
 bot_keyboard.add_line()
+bot_keyboard.add_button('Избранное', VkKeyboardColor.SECONDARY)
 bot_keyboard.add_button('Начать сначала', VkKeyboardColor.NEGATIVE)
 
 
