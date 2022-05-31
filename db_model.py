@@ -1,6 +1,6 @@
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
-from vk_config import group_token
+from config import GROUP_TOKEN
 from random import randrange
 import sqlalchemy as sq
 from sqlalchemy.ext.declarative import declarative_base
@@ -16,7 +16,7 @@ engine = sq.create_engine('postgresql://user@localhost:5432/vkinder_db',
 Session = sessionmaker(bind=engine)
 
 # Для работы с ВК
-vk = vk_api.VkApi(token=group_token)
+vk = vk_api.VkApi(token=GROUP_TOKEN)
 longpoll = VkLongPoll(vk)
 # Для работы с БД
 session = Session()
