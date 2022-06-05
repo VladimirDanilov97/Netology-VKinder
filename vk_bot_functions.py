@@ -30,7 +30,7 @@ class MyBotFunctions():
 
         params = {'q': query, 'country_id': 1}
         response = self.user_vk.method('database.getCities', params)
-        return response['items'][:10]
+        return response['items'][:5]
 
 
     def register_user(self, user_id: int) -> None: 
@@ -43,8 +43,8 @@ class MyBotFunctions():
                                   'fields': ', '.join(fields_to_get)
                                   })[0]
         id = int(response['id'])
-        city_id = int(response['city']['id'])
-        sex_id = int(response['sex'])   
+        city_id = int(response.get('city', {'id': 0})['id'])
+        sex_id = int(response.get('sex', 0))   
         self.db.register_user(id, city_id, sex_id)
 
 
@@ -63,6 +63,7 @@ class MyBotFunctions():
                   'count': self._count}
                   
         response = self.user_vk.method('users.search', params)
+        
         users = response['items'][0] 
         return users
 
