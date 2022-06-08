@@ -1,6 +1,4 @@
-from click import command
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-
 
 bot_keyboard = VkKeyboard(one_time=False)
 bot_keyboard.add_button('Начать поиск', VkKeyboardColor.POSITIVE)
@@ -19,3 +17,7 @@ search_option_keyboard.add_button('Назад к меню', VkKeyboardColor.PRIM
 
 start_keyboard = VkKeyboard(one_time=True)
 start_keyboard.add_button('Start', VkKeyboardColor.PRIMARY)
+
+search_type_keyboard = VkKeyboard(one_time=True)
+search_type_keyboard.add_button('Быстрый поиск', VkKeyboardColor.PRIMARY)
+search_type_keyboard.add_button('Задать параметры', VkKeyboardColor.POSITIVE)

@@ -1,10 +1,10 @@
 import re
-from datetime import date
+from datetime import date, datetime
 from config import GROUP_TOKEN, USER_TOKEN
 from vk_api.longpoll import VkEventType
 from vk_api.exceptions import ApiError
 from vk_bot_functions import MyBotFunctions
-from keyboards import bot_keyboard, search_option_keyboard, start_keyboard
+from keyboards import bot_keyboard, search_option_keyboard, start_keyboard, search_type_keyboard
 
 
 class MyBot(MyBotFunctions):
@@ -44,6 +44,10 @@ class MyBot(MyBotFunctions):
 
         elif event.text.lower() == 'следующий':
             offset = self.db.get_user_offset(user_id=event.user_id)
+            if offset == 1000:
+                self.db.update_user_state(event.user_id, 'None')
+                self.write_msg(event.user_id, 'Достигнут лимит', bot_keyboard)
+                
             search_params = self.db.get_search_params(user_id=event.user_id)
             try:
                 user_to_send = self.find_suitable_users(
@@ -221,13 +225,40 @@ class MyBot(MyBotFunctions):
             self.write_msg(event.user_id, 'Введите название города')
 
         elif request == 'начать поиск':
+            self.write_msg(
+                event.user_id,
+                'Выберите тип поиска',
+                keyboard=search_type_keyboard)
+
+        elif request in ('быстрый поиск', "задать параметры"):
             new_state = 'поиск'
-            self.db.update_user_state(event.user_id, new_state=new_state)
-            self.write_msg(event.user_id, '''Введите запрос в формате: 
-                                            id-города\n\
-                                            id-пола [женский - 1; мужской -2]\n\
-                                            возраст\n\
-                                            Например: 1 2 25''')
+
+            if request == 'задать параметры':
+                self.write_msg(
+                    event.user_id,
+                    '''
+                    Введите запрос в формате: 
+                    id-города\n\
+                    id-пола [женcкий - 1; мужской -2]\n\
+                    возраст\n\
+                    Например: 1 2 25
+                    ''')
+                self.db.update_user_state(event.user_id, new_state=new_state)
+
+            elif request == 'быстрый поиск':
+                try:
+                    user = self.get_user(event.user_id)
+                    age = datetime.now().year - int(user['bdate'][-4:])
+                    opposite_sex = lambda x: 1 if x == '2' else 2 if x == '1' else '1'
+                    event.text = f"{user['city']['id']} {opposite_sex(user['sex'])} {age}"
+                    self.db.update_user_state(event.user_id, new_state=new_state)
+                    return self.search_command_handler(event)
+                except KeyError:
+                    self.write_msg(event.user_id,
+                    'Ваш профиль закрыт, используйте настраиваемый поиск',
+                    bot_keyboard
+                    )
+                
 
         elif request == 'избранное':
             favorite_users = self.db.get_favorite_list(event.user_id)
@@ -235,6 +266,7 @@ class MyBot(MyBotFunctions):
             new_state = 'избранное'
             self.db.update_user_state(event.user_id, new_state=new_state)
             self.favorite_list_command_handler(event)
+            
         else:
             self.write_msg(event.user_id, "Для того чтобы начать, нажмите start", start_keyboard)
 

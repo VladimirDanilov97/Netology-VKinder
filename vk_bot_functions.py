@@ -64,8 +64,8 @@ class MyBotFunctions():
                   
         response = self.user_vk.method('users.search', params)
         
-        users = response['items'][0] 
-        return users
+        user = response['items'][0] 
+        return user
 
 
     def get_top_3_photo(self, user_id):
@@ -93,9 +93,9 @@ class MyBotFunctions():
 
     def get_user(self, user_id):
         params = {'user_ids': user_id,
-                  'fields': 'last_seen',
+                  'fields': 'last_seen, bdate, city, sex'
                   }
                   
         response = self.user_vk.method('users.get', params)
-        users = response[0]
-        return users
+        user = response[0]
+        return user
