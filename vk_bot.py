@@ -1,10 +1,11 @@
 import re
+from datetime import date
 from config import GROUP_TOKEN, USER_TOKEN
 from vk_api.longpoll import VkEventType
-from keyboards import bot_keyboard, search_option_keyboard, start_keyboard
-from vk_bot_functions import MyBotFunctions
-from datetime import date
 from vk_api.exceptions import ApiError
+from vk_bot_functions import MyBotFunctions
+from keyboards import bot_keyboard, search_option_keyboard, start_keyboard
+
 
 class MyBot(MyBotFunctions):
 

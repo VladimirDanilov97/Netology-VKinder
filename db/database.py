@@ -1,6 +1,4 @@
-from ast import stmt
-from matplotlib import use
-from sqlalchemy import create_engine, insert, select, delete
+from sqlalchemy import create_engine, select
 from db.model import *
 
 

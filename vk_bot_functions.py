@@ -2,7 +2,7 @@ from random import randrange
 from db.database import DataBaseConnection
 from vk_api import VkApi
 from vk_api.keyboard import VkKeyboard
-from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.longpoll import VkLongPoll
 
 class MyBotFunctions():
 
