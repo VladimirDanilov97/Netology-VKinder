@@ -44,11 +44,13 @@ class MyBot(MyBotFunctions):
 
         elif event.text.lower() == 'следующий':
             offset = self.db.get_user_offset(user_id=event.user_id)
-            if offset == 1000:
+            print(offset)
+            if offset == 100:
                 self.db.update_user_state(event.user_id, 'None')
-                self.write_msg(event.user_id, 'Достигнут лимит', bot_keyboard)
-                
+                return self.write_msg(event.user_id, 'Достигнут лимит', bot_keyboard)
+
             search_params = self.db.get_search_params(user_id=event.user_id)
+            
             try:
                 user_to_send = self.find_suitable_users(
                     search_params['city_id'],
@@ -134,6 +136,10 @@ class MyBot(MyBotFunctions):
             new_state = 'None'
             self.db.update_user_state(event.user_id, new_state)
             self.write_msg(event.user_id, 'Выберите команду', bot_keyboard)
+        
+        else:
+            self.db.update_user_state(event.user_id, 'None')
+            self.write_msg(event.user_id, 'Не понял запрос', bot_keyboard)
 
     def find_city_id_command_handler(self, event):
 
@@ -232,7 +238,7 @@ class MyBot(MyBotFunctions):
 
         elif request in ('быстрый поиск', "задать параметры"):
             new_state = 'поиск'
-
+            self.db.update_user_state(event.user_id, new_state=new_state)
             if request == 'задать параметры':
                 self.write_msg(
                     event.user_id,
@@ -243,7 +249,7 @@ class MyBot(MyBotFunctions):
                     возраст\n\
                     Например: 1 2 25
                     ''')
-                self.db.update_user_state(event.user_id, new_state=new_state)
+                
 
             elif request == 'быстрый поиск':
                 try:
@@ -251,11 +257,10 @@ class MyBot(MyBotFunctions):
                     age = datetime.now().year - int(user['bdate'][-4:])
                     opposite_sex = lambda x: 1 if x == '2' else 2 if x == '1' else '1'
                     event.text = f"{user['city']['id']} {opposite_sex(user['sex'])} {age}"
-                    self.db.update_user_state(event.user_id, new_state=new_state)
                     return self.search_command_handler(event)
                 except KeyError:
                     self.write_msg(event.user_id,
-                    'Ваш профиль закрыт, используйте настраиваемый поиск',
+                    'Ваш профиль закрыт или не заполнен, используйте настраиваемый поиск',
                     bot_keyboard
                     )
                 
